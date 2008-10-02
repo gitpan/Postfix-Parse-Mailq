@@ -1,0 +1,10 @@
+--- 
+abstract: parse the output of the postfix mailq command
+author: 
+  - Ricardo SIGNES <rjbs@cpan.org>
+generated_by: Dist::Zilla::Plugin::MetaYaml version 0.005
+license: perl
+name: Postfix-Parse-Mailq
+requires: 
+  Mixin::Linewise::Readers: 0
+version: 0.001

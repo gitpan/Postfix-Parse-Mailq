@@ -1,0 +1,143 @@
+use strict;
+use warnings;
+package Postfix::Parse::Mailq;
+our $VERSION = '0.001';
+
+use Mixin::Linewise::Readers -readers;
+# ABSTRACT: parse the output of the postfix mailq command
+
+
+sub read_handle {
+  my ($self, $handle) = @_;
+
+  my $first = $handle->getline;
+
+  chomp $first;
+  return [] if $first eq 'Mail queue is empty';
+
+  Carp::confess("first line did not appear to be first line of mailq output")
+    unless $first =~ m{\A-Queue ID-};
+
+  my @current;
+  my @entries;
+  LINE: while (my $line = $handle->getline) {
+    if ($line eq "\n") {
+      push @entries, $self->parse_block(\@current);
+      @current = ();
+      next LINE;
+    }
+
+    push @current, $line;
+  }
+
+  return \@entries;
+}
+
+
+my %STATUS_FOR = (
+  '!' => 'hold',
+  '*' => 'active',
+);
+
+sub parse_block {
+  my ($self, $block) = @_;
+
+  chomp @$block;
+  my $first = shift @$block;
+  my $error = $block->[0] =~ /\A\S/ ? (shift @$block) : undef;
+  my @dest  = map { s/^\s+//; $_; } @$block;
+
+  my ($qid, $status_chr, $size, $date, $sender) = $first =~ m/
+    \A
+    ([A-F0-9]+)
+    ([*!])?
+    \s+
+    (\d+)
+    \s+
+    (.{19})
+    \s+
+    (\S.+)
+    \z
+  /x;
+
+  my $status = $status_chr ? ($STATUS_FOR{$status_chr} || 'unknown') : 'queued';
+
+  return {
+    queue_id        => $qid,
+    status          => $status,
+    size            => $size,
+    date            => $date,
+    sender          => $sender,
+    error_string    => $error,
+    remaining_rcpts => \@dest,
+  }
+}
+
+1;
+
+__END__
+
+=pod
+
+=head1 NAME
+
+Postfix::Parse::Mailq - parse the output of the postfix mailq command
+
+=head1 VERSION
+
+version 0.001
+
+=head1 SYNOPSIS
+
+    use Postfix::Parse::Mailq;
+
+    my $mailq_output = `mailq`;
+    my $entries = Postfix::Parse::Mailq->read_string($mailq_output);
+
+    my $bytes = 0;
+    for my $entry (@$entries) {
+      next unless grep { /\@aol.com$/ } @{ $entry->{remaining_rcpts} };
+      $bytes += $entry->{size};
+    }
+    
+    print "$bytes bytes remain to send to AOL destinations\n";
+
+=head1 WARNING
+
+This code is really rough and the interface will change.  Entries will be
+objects.  There will be some more methods.  Still, the basics are likely to
+keep working, or keep pretty close to what you see here now.
+
+=head1 METHODS
+
+=head2 read_file
+
+=head2 read_handle
+
+=head2 read_string
+
+This methods read the output of postfix's F<mailq> from a file (by name), a
+filehandle, or a string, respectively.  They return an arrayref of hashrefs,
+each hashref representing one entry in the queue as reported by F<mailq>.
+
+=head2 parse_block
+
+    my $entry = Mailq->parse_block(\@lines);
+
+Given all the lines in a single entry's block of lines in mailq output, this
+returns data about the entry.
+
+=head1 AUTHOR
+
+  Ricardo SIGNES <rjbs@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2008 by Ricardo SIGNES.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as perl itself.
+
+=cut 
+
+
