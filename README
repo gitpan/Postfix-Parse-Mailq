@@ -1,7 +1,7 @@
 
 
 This archive contains the distribution Postfix-Parse-Mailq, version
-0.001:
+1.000:
 
   parse the output of the postfix mailq command
 
