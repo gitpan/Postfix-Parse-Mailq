@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 package Postfix::Parse::Mailq;
-our $VERSION = '1.000';
+our $VERSION = '1.001';
 
 use Mixin::Linewise::Readers -readers;
 # ABSTRACT: parse the output of the postfix mailq command
@@ -34,7 +34,7 @@ sub read_handle {
     push @current, $line;
   }
 
-  if (@current) {
+  if (@current and $current[0] !~ /^-- \d+ .?bytes/i) {
     my $entry = $self->parse_block(\@current);
     $entry->{spool} = $arg->{spool}{ $entry->{queue_id} } if $arg->{spool};
     push @entries, $entry;
@@ -95,7 +95,7 @@ Postfix::Parse::Mailq - parse the output of the postfix mailq command
 
 =head1 VERSION
 
-version 1.000
+version 1.001
 
 =head1 SYNOPSIS
 
