@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 package Postfix::Parse::Mailq;
-our $VERSION = '1.001';
-
+{
+  $Postfix::Parse::Mailq::VERSION = '1.002';
+}
 use Mixin::Linewise::Readers -readers;
 # ABSTRACT: parse the output of the postfix mailq command
 
@@ -54,7 +55,9 @@ sub parse_block {
 
   chomp @$block;
   my $first = shift @$block;
-  my $error = $block->[0] =~ /\A\S/ ? (shift @$block) : undef;
+  my $error = defined $block->[0] && $block->[0] =~ /\A\S/
+            ? (shift @$block)
+            : undef;
   my @dest  = map { s/^\s+//; $_; } @$block;
 
   my ($qid, $status_chr, $size, $date, $sender) = $first =~ m/
@@ -95,28 +98,22 @@ Postfix::Parse::Mailq - parse the output of the postfix mailq command
 
 =head1 VERSION
 
-version 1.001
+version 1.002
 
 =head1 SYNOPSIS
 
-    use Postfix::Parse::Mailq;
+  use Postfix::Parse::Mailq;
 
-    my $mailq_output = `mailq`;
-    my $entries = Postfix::Parse::Mailq->read_string($mailq_output);
+  my $mailq_output = `mailq`;
+  my $entries = Postfix::Parse::Mailq->read_string($mailq_output);
 
-    my $bytes = 0;
-    for my $entry (@$entries) {
-      next unless grep { /\@aol.com$/ } @{ $entry->{remaining_rcpts} };
-      $bytes += $entry->{size};
-    }
-    
-    print "$bytes bytes remain to send to AOL destinations\n";
-
-=head1 WARNING
-
-This code is really rough and the interface will change.  Entries will be
-objects.  There will be some more methods.  Still, the basics are likely to
-keep working, or keep pretty close to what you see here now.
+  my $bytes = 0;
+  for my $entry (@$entries) {
+    next unless grep { /\@aol.com$/ } @{ $entry->{remaining_rcpts} };
+    $bytes += $entry->{size};
+  }
+  
+  print "$bytes bytes remain to send to AOL destinations\n";
 
 =head1 METHODS
 
@@ -126,7 +123,7 @@ keep working, or keep pretty close to what you see here now.
 
 =head2 read_string
 
-    my $entries = Postfix::Parse::Mailq->read_string($string, \%arg);
+  my $entries = Postfix::Parse::Mailq->read_string($string, \%arg);
 
 This methods read the output of postfix's F<mailq> from a file (by name), a
 filehandle, or a string, respectively.  They return an arrayref of hashrefs,
@@ -134,28 +131,32 @@ each hashref representing one entry in the queue as reported by F<mailq>.
 
 Valid arguments are:
 
-    spool - a hashref of { queue_id -> spool_name } pairs
-            if given, this will be used to attempt to indicate in which
-            spool messages currently are; it is not entirely reliable (race!)
+  spool - a hashref of { queue_id -> spool_name } pairs
+          if given, this will be used to attempt to indicate in which
+          spool messages currently are; it is not entirely reliable (race!)
 
 =head2 parse_block
 
-    my $entry = Mailq->parse_block(\@lines);
+  my $entry = Mailq->parse_block(\@lines);
 
 Given all the lines in a single entry's block of lines in mailq output, this
 returns data about the entry.
 
+=head1 WARNING
+
+This code is really rough and the interface will change.  Entries will be
+objects.  There will be some more methods.  Still, the basics are likely to
+keep working, or keep pretty close to what you see here now.
+
 =head1 AUTHOR
 
-  Ricardo SIGNES <rjbs@cpan.org>
+Ricardo SIGNES <rjbs@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2008 by Ricardo SIGNES.
+This software is copyright (c) 2013 by Ricardo SIGNES.
 
 This is free software; you can redistribute it and/or modify it under
-the same terms as perl itself.
+the same terms as the Perl 5 programming language system itself.
 
-=cut 
-
-
+=cut
