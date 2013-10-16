@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Postfix::Parse::Mailq;
 {
-  $Postfix::Parse::Mailq::VERSION = '1.002';
+  $Postfix::Parse::Mailq::VERSION = '1.003';
 }
 use Mixin::Linewise::Readers -readers;
 # ABSTRACT: parse the output of the postfix mailq command
@@ -98,7 +98,7 @@ Postfix::Parse::Mailq - parse the output of the postfix mailq command
 
 =head1 VERSION
 
-version 1.002
+version 1.003
 
 =head1 SYNOPSIS
 
